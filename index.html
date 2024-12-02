@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>NoSleep</title>
+
+    <style>
+      html {
+        background: black;
+      }
+
+      #status {
+        color: white;
+        text-align: center;
+        line-height: 100vh;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="status"></div>
+
+    <script>
+	    window.addEventListener('error', error => alert(error.message))
+    </script>
+    <script>
+      const status = document.getElementById('status')
+      status.innerText = "Loading"
+
+      document.addEventListener("DOMContentLoaded", async (event) => {
+        try {
+          const query = new URLSearchParams(window.location.search);
+          const duration = query.has('duration') ? parseInt(query.get('duration')) : 30
+          var clock = null
+          var timeout = null
+
+          status.innerText = "Requesting WakeLock"
+          const wakeLock = await navigator.wakeLock.request()
+
+          wakeLock.addEventListener('release', event => {
+            cancelTimer()
+            status.innerText = "WakeLock released"
+          })
+
+          function startTimer() {
+            cancelTimer()
+            var timer = duration
+            clock = setInterval(() => {
+              timer--
+              status.innerText = `WakeLock aquired, ${timer}min remaining`
+            }, 60000)
+            timeout = setTimeout(() => {
+              clearInterval(clock)
+              wakeLock.release()
+            }, duration * 60000)
+            status.innerText = `WakeLock aquired, ${timer}min remaining`
+          }
+
+          function cancelTimer() {
+            clearInterval(clock)
+            clearTimeout(timeout)
+          }
+
+          if (!Number.isNaN(duration)) {
+            startTimer()
+            document.body.addEventListener('click', startTimer)
+          } else {
+            status.innerText = "WakeLock aquired"
+          }
+        } catch (exc) {
+          status.innerText = `Failed to aquire WakeLock: ${exc}`
+        }
+      })
+    </script>
+  </body>
+</html>
